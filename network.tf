@@ -20,6 +20,7 @@ module "vpc" {
 
   enable_nat_gateway      = false
   enable_vpn_gateway      = false
+  enable_dns_hostnames    = var.enable_dns_hostnames
   map_public_ip_on_launch = var.map_public_ip_on_launch
 
   tags = merge(local.common_tags, {
@@ -38,7 +39,7 @@ resource "aws_security_group" "nginx-sg" {
     from_port   = 80
     to_port     = 80
     protocol    = "tcp"
-    cidr_blocks = [var.vpc_cidr_block.terraform.workspace]
+    cidr_blocks = [var.vpc_cidr_block[terraform.workspace]]
   }
 
   # outbound internet access
