@@ -86,7 +86,7 @@ resource "aws_iam_instance_profile" "instance_profile" {
 
 resource "aws_iam_role_policy" "allow_s3_all" {
   name = "${var.bucket_name}-allow_s3_all"
-  role = aws_iam_role.allow_nginx_s3.name
+  role = aws_iam_role.allow_instance_s3.name
 
   policy = jsonencode({
     Version : "2012-10-17",
