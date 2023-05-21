@@ -1,0 +1,107 @@
+resource "aws_s3_bucket" "web_bucket" {
+  bucket = var.bucket_name
+  #acl = "private"
+  force_destroy = true
+
+  policy = jsonencode({
+    Version : "2012-10-17",
+    Statement : [
+      {
+        Effect : "Allow",
+        Principal : {
+          AWS : "${var.elb_service_account_arn}"
+        },
+        Action : "s3:PutObject",
+        Resource : "arn:aws:s3:::${var.bucket_name}/alb-logs/*"
+      },
+      {
+        Effect : "Allow",
+        Principal : {
+          Service : "delivery.logs.amazonaws.com"
+        },
+        Action : "s3:PutObject",
+        Resource : "arn:aws:s3:::${var.bucket_name}/alb-logs/*",
+        Condition : {
+          StringEquals : {
+            "s3:x-amz-acl" : "bucket-owner-full-control"
+          }
+        }
+      },
+      {
+        Effect : "Allow",
+        Principal : {
+          Service : "delivery.logs.amazonaws.com"
+        },
+        Action : "s3:GetBucketAcl",
+        Resource : "arn:aws:s3:::${var.bucket_name}"
+      }
+    ]
+  })
+
+  tags = var.common_tags
+}
+
+resource "aws_s3_bucket_acl" "web_bucket_acl" {
+  bucket = aws_s3_bucket.web_bucket.bucket
+  acl    = "private"
+}
+
+resource "aws_s3_bucket_ownership_controls" "s3_bucket_acl_ownership" {
+  bucket = aws_s3_bucket.web_bucket.bucket
+  rule {
+    object_ownership = "BucketOwnerPreferred"
+  }
+}
+
+## https://stackoverflow.com/questions/76049290/error-accesscontrollistnotsupported-when-trying-to-create-a-bucket-acl-in-aws
+## https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/s3_bucket_ownership_controls
+
+## aws_iam_role
+resource "aws_iam_role" "allow_instance_s3" {
+  name = "${var.bucket_name}-allow_instance_s3"
+
+  assume_role_policy = jsonencode({
+    "Version" : "2012-10-17",
+    "Statement" : [
+      {
+        "Action" : "sts:AssumeRole",
+        "Principal" : {
+          "Service" : "ec2.amazonaws.com"
+        },
+        "Effect" : "Allow",
+        "Sid" : ""
+      }
+    ]
+  })
+
+  tags = var.common_tags
+}
+
+resource "aws_iam_instance_profile" "instance_profile" {
+  name = "${var.bucket_name}-instance_profile"
+  role = aws_iam_role.allow_instance_s3.name
+
+  tags = var.common_tags
+}
+
+resource "aws_iam_role_policy" "allow_s3_all" {
+  name = "${var.bucket_name}-allow_s3_all"
+  role = aws_iam_role.allow_instance_s3.name
+
+  policy = jsonencode({
+    Version : "2012-10-17",
+    Statement : [
+      {
+        Action : [
+          "s3:*"
+        ],
+        Effect : "Allow",
+        Resource : [
+          "arn:aws:s3:::${var.bucket_name}",
+          "arn:aws:s3:::${var.bucket_name}/*"
+        ]
+      }
+    ]
+  })
+
+}

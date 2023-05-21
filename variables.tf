@@ -21,8 +21,9 @@ variable "vpc_subnet_count" {
   description = "Number of subnets to create"
   default     = 2
 }
+
 variable "enable_dns_hostnames" {
-  type        = string
+  type        = bool
   description = "Enable DNS Hostname in VPC"
   default     = true
 }
@@ -66,16 +67,3 @@ variable "billing_code" {
   type        = string
   description = "Billing code for resource tagging"
 }
-
-
-# variable "aws_access_key" {
-#     type = string
-#     description = "AWS Access Key"  
-#     sensitive = true
-# }
-
-# variable "aws_secret_key" {
-#     type = string
-#     description = "AWS Secret Key"  
-#     sensitive = true
-# }
